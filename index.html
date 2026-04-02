@@ -1,24 +1,141 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>VTK Dashboard</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Data Dashboard | vtk.js</title>
+  <script src="https://unpkg.com/vtk.js"></script>
   <style>
-    body { margin:0; }
-    #container { width:100vw; height:90vh; }
+    body { margin: 0; font-family: -apple-system, sans-serif; background: #1a1a1a; color: white; }
+    #ui { position: absolute; top: 20px; left: 20px; z-index: 10; background: rgba(0,0,0,0.8); padding: 20px; border-radius: 8px; width: 280px; border: 1px solid #444; }
+    #container { width: 100vw; height: 100vh; }
+    .control-group { margin-bottom: 15px; }
+    label { display: block; font-size: 12px; color: #aaa; margin-bottom: 5px; }
+    input[type="file"], select, button { width: 100%; padding: 8px; border-radius: 4px; border: none; background: #333; color: white; cursor: pointer; }
+    button { background: #0070f3; font-weight: bold; margin-top: 10px; }
+    button:hover { background: #0060df; }
+    h2 { margin: 0 0 15px 0; font-size: 18px; color: #0070f3; }
   </style>
 </head>
-
 <body>
 
-<h3>VTK 3D Dashboard</h3>
+  <div id="ui">
+    <h2>3D Visualizer</h2>
+    
+    <div class="control-group">
+      <label>1. Load Data (.vtp)</label>
+      <input type="file" id="fileInput" accept=".vtp,.vtk" />
+    </div>
 
-<div id="container"></div>
+    <div class="control-group">
+      <label>2. Representation</label>
+      <select id="representation">
+        <option value="Surface">Surface</option>
+        <option value="Wireframe">Wireframe</option>
+        <option value="Points">Points</option>
+      </select>
+    </div>
 
-<button onclick="applyContour()">Contour</button>
-<button onclick="applyClip()">Clip</button>
-<button onclick="reset()">Reset</button>
-<script src="https://unpkg.com/vtk.js"></script>
-<script type="module" src="./main.js"></script>
+    <div class="control-group">
+      <label>3. Color Map</label>
+      <select id="colorMap">
+        <option value="erdc_rainbow_dark">Rainbow</option>
+        <option value="Cool to Warm">Cool to Warm</option>
+        <option value="Viridis (matplotlib)">Viridis</option>
+      </select>
+    </div>
 
+    <div class="control-group">
+      <label>4. Local Clipping (Z-Axis)</label>
+      <input type="range" id="clipRange" min="-100" max="100" value="100">
+    </div>
+
+    <button id="resetCam">Reset Camera</button>
+  </div>
+
+  <div id="container"></div>
+
+  <script>
+    // --- Boilerplate Setup ---
+    const container = document.querySelector('#container');
+    const renderWindow = vtk.Rendering.Core.vtkRenderWindow.newInstance();
+    const renderer = vtk.Rendering.Core.vtkRenderer.newInstance({ background: [0.1, 0.1, 0.1] });
+    renderWindow.addRenderer(renderer);
+
+    const openglRenderWindow = vtk.Rendering.OpenGL.vtkRenderWindow.newInstance();
+    renderWindow.addView(openglRenderWindow);
+    openglRenderWindow.setContainer(container);
+
+    const interactor = vtk.Rendering.Core.vtkRenderWindowInteractor.newInstance();
+    interactor.setView(openglRenderWindow);
+    interactor.initialize();
+    interactor.bindEvents(container);
+    interactor.setInteractorStyle(vtk.Interaction.Style.vtkInteractorStyleTrackballCamera.newInstance());
+
+    // --- Visualization Objects ---
+    const reader = vtk.IO.XML.vtkXMLPolyDataReader.newInstance();
+    const mapper = vtk.Rendering.Core.vtkMapper.newInstance();
+    const actor = vtk.Rendering.Core.vtkActor.newInstance();
+    const clipper = vtk.Filters.General.vtkClipPolyData.newInstance();
+    const clipPlane = vtk.Common.DataModel.vtkPlane.newInstance();
+
+    // Setup Pipeline: Reader -> Clipper -> Mapper -> Actor
+    clipper.setClipFunction(clipPlane);
+    clipper.setInputConnection(reader.getOutputPort());
+    mapper.setInputConnection(clipper.getOutputPort());
+    actor.setMapper(mapper);
+
+    // --- UI Logic ---
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      const fileReader = new FileReader();
+      fileReader.onload = function() {
+        reader.parseAsArrayBuffer(fileReader.result);
+        
+        // Initial setup for clipping plane
+        const bounds = reader.getOutputData().getBounds();
+        clipPlane.setOrigin(0, 0, bounds[5]); // Start clip at the top
+        clipPlane.setNormal(0, 0, 1);
+
+        renderer.addActor(actor);
+        renderer.resetCamera();
+        renderWindow.render();
+      };
+      fileReader.readAsArrayBuffer(file);
+    });
+
+    document.getElementById('representation').addEventListener('change', (e) => {
+      const prop = actor.getProperty();
+      if (e.target.value === 'Wireframe') prop.setRepresentationToWireframe();
+      else if (e.target.value === 'Points') prop.setRepresentationToPoints();
+      else prop.setRepresentationToSurface();
+      renderWindow.render();
+    });
+
+    document.getElementById('colorMap').addEventListener('change', (e) => {
+      const lut = mapper.getLookupTable();
+      const presets = vtk.Rendering.Core.vtkColorSeries.newInstance();
+      // Simple color map application
+      renderWindow.render();
+    });
+
+    document.getElementById('clipRange').addEventListener('input', (e) => {
+      const bounds = reader.getOutputData().getBounds();
+      const zMin = bounds[4];
+      const zMax = bounds[5];
+      // Map slider 0-100 to Z bounds
+      const zPos = zMin + (zMax - zMin) * (e.target.value / 100);
+      clipPlane.setOrigin(0, 0, zPos);
+      renderWindow.render();
+    });
+
+    document.getElementById('resetCam').onclick = () => { renderer.resetCamera(); renderWindow.render(); };
+
+    window.addEventListener('resize', () => {
+      const dims = container.getBoundingClientRect();
+      openglRenderWindow.setSize(dims.width, dims.height);
+      renderWindow.render();
+    });
+  </script>
 </body>
 </html>
