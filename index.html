@@ -141,34 +141,61 @@
   <span class="pill" id="status">IDLE</span>
 </div>
 
-<!-- Use a well-known stable vtk.js build that reliably exposes window.vtk -->
-<script src="https://unpkg.com/vtk.js@15.14.0/vtk.js"></script>
+<!-- Official vtk.js UMD — exposes window.vtk with nested namespaces -->
+<script src="https://unpkg.com/vtk.js"></script>
 <script>
-// vtk.js v15 UMD bundle exposes window.vtk as a flat object with short names
-// e.g. window.vtk.vtkRenderWindow, window.vtk.vtkSphereSource etc.
-let vt;
+// The unpkg.com/vtk.js UMD bundle exposes:
+//   vtk.Rendering.Core.vtkActor / vtkMapper / vtkRenderer / vtkRenderWindow
+//   vtk.Rendering.Misc.vtkFullScreenRenderWindow
+//   vtk.Rendering.OpenGL.vtkRenderWindow (the WebGL view)
+//   vtk.Interaction.Style.vtkInteractorStyleTrackballCamera
+//   vtk.Filters.Sources.vtkSphereSource / vtkConeSource
+//   vtk.Filters.General.vtkContourFilter
+//   vtk.Common.DataModel.vtkPolyData / vtkPlane
+//   vtk.Common.Core.vtkPoints / vtkCellArray / vtkDataArray
+//   vtk.Common.Color.vtkColorTransferFunction
+//   vtk.IO.Legacy.vtkPolyDataReader
+//   vtk.IO.XML.vtkXMLPolyDataReader
+//   vtk.IO.Misc.vtkOBJReader
+// Shorthand aliases so the rest of the code stays clean:
+let vtkRenderWindow, vtkRenderer, vtkOpenGLRenderWindow, vtkRenderWindowInteractor,
+    vtkInteractorStyleTrackballCamera, vtkActor, vtkMapper, vtkColorTransferFunction,
+    vtkSphereSource, vtkConeSource, vtkPolyData, vtkPoints, vtkCellArray, vtkDataArray,
+    vtkPlane, vtkContourFilter, vtkPolyDataReader, vtkXMLPolyDataReader, vtkOBJReader;
 
 function setupVTK(){
-  const ns=window.vtk;
-  if(!ns){st('NO VTK');return false;}
-  // Build a lookup: short name → class, searching the flat namespace
-  const map={};
-  for(const key of Object.keys(ns)){
-    const cls=ns[key];
-    if(cls&&cls.newInstance){
-      // key might be full path like 'Rendering/Core/vtkRenderer' or just 'vtkRenderer'
-      const short=key.split('/').pop();
-      map[short]=cls;
-    }
+  const v=window.vtk;
+  if(!v){st('NO VTK');return false;}
+  try{
+    vtkRenderWindow               = v.Rendering.Core.vtkRenderWindow;
+    vtkRenderer                   = v.Rendering.Core.vtkRenderer;
+    vtkOpenGLRenderWindow         = v.Rendering.OpenGL.vtkRenderWindow;
+    vtkRenderWindowInteractor     = v.Rendering.Core.vtkRenderWindowInteractor;
+    vtkInteractorStyleTrackballCamera = v.Interaction.Style.vtkInteractorStyleTrackballCamera;
+    vtkActor                      = v.Rendering.Core.vtkActor;
+    vtkMapper                     = v.Rendering.Core.vtkMapper;
+    vtkColorTransferFunction      = v.Rendering.Core.vtkColorTransferFunction;
+    vtkSphereSource               = v.Filters.Sources.vtkSphereSource;
+    vtkConeSource                 = v.Filters.Sources.vtkConeSource;
+    vtkPolyData                   = v.Common.DataModel.vtkPolyData;
+    vtkPlane                      = v.Common.DataModel.vtkPlane;
+    vtkPoints                     = v.Common.Core.vtkPoints;
+    vtkCellArray                  = v.Common.Core.vtkCellArray;
+    vtkDataArray                  = v.Common.Core.vtkDataArray;
+    vtkContourFilter              = v.Filters.General.vtkContourFilter;
+    vtkPolyDataReader             = v.IO.Legacy.vtkPolyDataReader;
+    vtkXMLPolyDataReader          = v.IO.XML.vtkXMLPolyDataReader;
+    vtkOBJReader                  = v.IO.Misc.vtkOBJReader;
+  }catch(e){
+    // Namespace path may differ — log to debug
+    console.error('vtk namespace error:',e,'vtk keys:',Object.keys(v));
+    st('VTK NS ERR');return false;
   }
-  // Also check if ns itself is the class container with direct short keys
-  vt=new Proxy(map,{get:(t,name)=>{
-    if(t[name]) return t[name];
-    // fallback: direct on ns
-    if(ns[name]&&ns[name].newInstance) return ns[name];
-    console.error('vtk class not found:',name,'available:',Object.keys(t).slice(0,10));
-    return null;
-  }});
+  // Validate at least the core ones loaded
+  if(!vtkRenderWindow||!vtkRenderer){
+    console.error('Core vtk classes missing. vtk.Rendering:',v.Rendering);
+    st('VTK MISS');return false;
+  }
   return true;
 }
 
@@ -185,16 +212,16 @@ let activeCM='Rainbow';
 function init(){
   if(!setupVTK()) return;
   const c=document.getElementById('vtkC');
-  renderWindow=vt.vtkRenderWindow.newInstance();
-  renderer=vt.vtkRenderer.newInstance({background:[1,0.42,0]});
+  renderWindow=vtkRenderWindow.newInstance();
+  renderer=vtkRenderer.newInstance({background:[1,0.42,0]});
   renderWindow.addRenderer(renderer);
-  const glw=vt.vtkOpenGLRenderWindow.newInstance();
+  const glw=vtkOpenGLRenderWindow.newInstance();
   glw.setContainer(c);renderWindow.addView(glw);
   const{width:w,height:h}=c.getBoundingClientRect();glw.setSize(w||800,h||500);
   new ResizeObserver(()=>{const{width:w,height:h}=c.getBoundingClientRect();glw.setSize(w,h);}).observe(c);
-  interactor=vt.vtkRenderWindowInteractor.newInstance();
+  interactor=vtkRenderWindowInteractor.newInstance();
   interactor.setView(glw);interactor.initialize();
-  interactor.setInteractorStyle(vt.vtkInteractorStyleTrackballCamera.newInstance());
+  interactor.setInteractorStyle(vtkInteractorStyleTrackballCamera.newInstance());
   buildCM();
   (function loop(){requestAnimationFrame(loop);drawAxes();renderWindow.render();})();
   st('READY');
@@ -212,7 +239,7 @@ function buildCM(){
 function drawBar(cv,stops){const ctx=cv.getContext('2d'),g=ctx.createLinearGradient(0,0,cv.width,0);stops.forEach((c,i)=>g.addColorStop(i/(stops.length-1),`rgb(${c})`));ctx.fillStyle=g;ctx.fillRect(0,0,cv.width,cv.height);}
 function applyCM(){
   if(!mapper||!cpd)return;
-  const lut=vt.vtkColorTransferFunction.newInstance();
+  const lut=vtkColorTransferFunction.newInstance();
   MAPS[activeCM].forEach((c,i)=>{const t=sr[0]+i/(MAPS[activeCM].length-1)*(sr[1]-sr[0]);lut.addRGBPoint(t,c[0]/255,c[1]/255,c[2]/255);});
   mapper.setLookupTable(lut);mapper.setUseLookupTableScalarRange(true);mapper.modified();drawSB();
 }
@@ -230,11 +257,11 @@ function fmt(n){return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'
 
 function display(pd,lbl){
   clr();cpd=pd;
-  mapper=vt.vtkMapper.newInstance();mapper.setInputData(pd);
+  mapper=vtkMapper.newInstance();mapper.setInputData(pd);
   const sc=pd.getPointData().getScalars();
   if(sc){sr=sc.getRange();mapper.setScalarRange(sr[0],sr[1]);mapper.setScalarVisibility(true);applyCM();}
   else{mapper.setScalarVisibility(false);document.getElementById('sb').classList.remove('show');}
-  actor=vt.vtkActor.newInstance();actor.setMapper(mapper);
+  actor=vtkActor.newInstance();actor.setMapper(mapper);
   actor.getProperty().setOpacity(parseFloat(document.getElementById('opS').value));
   renderer.addActor(actor);
   document.getElementById('iPts').textContent='Pts '+fmt(pd.getNumberOfPoints());
@@ -255,19 +282,19 @@ function clr(){
 }
 
 function loadDemo(t){st('GEN...');setTimeout(()=>display(t==='sphere'?mkSph():t==='cone'?mkCone():t==='wavelet'?mkWave():mkTorus(),t),40);}
-function mkSph(){const s=vt.vtkSphereSource.newInstance({thetaResolution:64,phiResolution:64});const pd=s.getOutputData();const p=pd.getPoints().getData(),n=p.length/3,sc=new Float32Array(n);for(let i=0;i<n;i++)sc[i]=Math.sin(p[i*3]*6+p[i*3+1]*4+p[i*3+2]*5)*.5+.5;pd.getPointData().setScalars(vt.vtkDataArray.newInstance({name:'Scalar',values:sc}));return pd;}
-function mkCone(){const s=vt.vtkConeSource.newInstance({resolution:128,height:2});const pd=s.getOutputData();const p=pd.getPoints().getData(),n=p.length/3,sc=new Float32Array(n);for(let i=0;i<n;i++)sc[i]=(p[i*3+1]+1)/2;pd.getPointData().setScalars(vt.vtkDataArray.newInstance({name:'Height',values:sc}));return pd;}
-function mkWave(){const s=vt.vtkSphereSource.newInstance({thetaResolution:80,phiResolution:80});const pd=s.getOutputData();const p=pd.getPoints().getData(),n=p.length/3,sc=new Float32Array(n);for(let i=0;i<n;i++)sc[i]=.5+.3*Math.sin(10*p[i*3])*Math.cos(8*p[i*3+1])+.2*Math.cos(6*p[i*3+2]);pd.getPointData().setScalars(vt.vtkDataArray.newInstance({name:'Wave',values:sc}));return pd;}
-function mkTorus(){const R=1,r=.4,nu=80,nv=40,pts=[],polys=[],sc=[];for(let i=0;i<nu;i++){const u=2*Math.PI*i/nu;for(let j=0;j<nv;j++){const v=2*Math.PI*j/nv;pts.push((R+r*Math.cos(v))*Math.cos(u),(R+r*Math.cos(v))*Math.sin(u),r*Math.sin(v));sc.push(Math.sin(3*u+2*v)*.5+.5);}}for(let i=0;i<nu;i++)for(let j=0;j<nv;j++){const a=i*nv+j,b=((i+1)%nu)*nv+j,c=((i+1)%nu)*nv+(j+1)%nv,d=i*nv+(j+1)%nv;polys.push(4,a,b,c,d);}const pd=vt.vtkPolyData.newInstance(),pp=vt.vtkPoints.newInstance();pp.setData(new Float32Array(pts),3);pd.setPoints(pp);const cl=vt.vtkCellArray.newInstance();cl.setData(new Int32Array(polys));pd.setPolys(cl);pd.getPointData().setScalars(vt.vtkDataArray.newInstance({name:'Scalar',values:new Float32Array(sc)}));return pd;}
+function mkSph(){const s=vtkSphereSource.newInstance({thetaResolution:64,phiResolution:64});const pd=s.getOutputData();const p=pd.getPoints().getData(),n=p.length/3,sc=new Float32Array(n);for(let i=0;i<n;i++)sc[i]=Math.sin(p[i*3]*6+p[i*3+1]*4+p[i*3+2]*5)*.5+.5;pd.getPointData().setScalars(vtkDataArray.newInstance({name:'Scalar',values:sc}));return pd;}
+function mkCone(){const s=vtkConeSource.newInstance({resolution:128,height:2});const pd=s.getOutputData();const p=pd.getPoints().getData(),n=p.length/3,sc=new Float32Array(n);for(let i=0;i<n;i++)sc[i]=(p[i*3+1]+1)/2;pd.getPointData().setScalars(vtkDataArray.newInstance({name:'Height',values:sc}));return pd;}
+function mkWave(){const s=vtkSphereSource.newInstance({thetaResolution:80,phiResolution:80});const pd=s.getOutputData();const p=pd.getPoints().getData(),n=p.length/3,sc=new Float32Array(n);for(let i=0;i<n;i++)sc[i]=.5+.3*Math.sin(10*p[i*3])*Math.cos(8*p[i*3+1])+.2*Math.cos(6*p[i*3+2]);pd.getPointData().setScalars(vtkDataArray.newInstance({name:'Wave',values:sc}));return pd;}
+function mkTorus(){const R=1,r=.4,nu=80,nv=40,pts=[],polys=[],sc=[];for(let i=0;i<nu;i++){const u=2*Math.PI*i/nu;for(let j=0;j<nv;j++){const v=2*Math.PI*j/nv;pts.push((R+r*Math.cos(v))*Math.cos(u),(R+r*Math.cos(v))*Math.sin(u),r*Math.sin(v));sc.push(Math.sin(3*u+2*v)*.5+.5);}}for(let i=0;i<nu;i++)for(let j=0;j<nv;j++){const a=i*nv+j,b=((i+1)%nu)*nv+j,c=((i+1)%nu)*nv+(j+1)%nv,d=i*nv+(j+1)%nv;polys.push(4,a,b,c,d);}const pd=vtkPolyData.newInstance(),pp=vtkPoints.newInstance();pp.setData(new Float32Array(pts),3);pd.setPoints(pp);const cl=vtkCellArray.newInstance();cl.setData(new Int32Array(polys));pd.setPolys(cl);pd.getPointData().setScalars(vtkDataArray.newInstance({name:'Scalar',values:new Float32Array(sc)}));return pd;}
 
 document.getElementById('fi').addEventListener('change',e=>{
   const f=e.target.files[0];if(!f)return;st('LOAD...');
   const ext=f.name.split('.').pop().toLowerCase(),fr=new FileReader();
   fr.onload=ev=>{try{
     let pd;
-    if(ext==='vtp'){const r=vt.vtkXMLPolyDataReader.newInstance();r.parseAsArrayBuffer(ev.target.result);pd=r.getOutputData(0);}
-    else if(ext==='obj'){const r=vt.vtkOBJReader.newInstance({splitMode:'usemtl'});r.parseAsText(new TextDecoder().decode(ev.target.result));pd=r.getOutputData(0);}
-    else{const r=vt.vtkPolyDataReader.newInstance();r.parseAsArrayBuffer(ev.target.result);pd=r.getOutputData(0);}
+    if(ext==='vtp'){const r=vtkXMLPolyDataReader.newInstance();r.parseAsArrayBuffer(ev.target.result);pd=r.getOutputData(0);}
+    else if(ext==='obj'){const r=vtkOBJReader.newInstance({splitMode:'usemtl'});r.parseAsText(new TextDecoder().decode(ev.target.result));pd=r.getOutputData(0);}
+    else{const r=vtkPolyDataReader.newInstance();r.parseAsArrayBuffer(ev.target.result);pd=r.getOutputData(0);}
     if(!pd)throw 0;display(pd,f.name);
   }catch{st('ERR');}};
   fr.readAsArrayBuffer(f);
@@ -279,7 +306,7 @@ dz.addEventListener('drop',e=>{e.preventDefault();dz.style.background='';if(e.da
 
 function setMode(btn,m){document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');if(!actor)return;const p=actor.getProperty();m==='surface'?p.setRepresentationToSurface():m==='wireframe'?p.setRepresentationToWireframe():p.setRepresentationToPoints();}
 function setOp(v){document.getElementById('opV').textContent=parseFloat(v).toFixed(1);if(actor)actor.getProperty().setOpacity(parseFloat(v));}
-function setInt(k){['R','P','Z'].forEach(x=>document.getElementById('btn'+x).classList.remove('active'));document.getElementById('btn'+k).classList.add('active');interactor.setInteractorStyle(vt.vtkInteractorStyleTrackballCamera.newInstance());}
+function setInt(k){['R','P','Z'].forEach(x=>document.getElementById('btn'+x).classList.remove('active'));document.getElementById('btn'+k).classList.add('active');interactor.setInteractorStyle(vtkInteractorStyleTrackballCamera.newInstance());}
 function shot(){const cv=document.querySelector('#vtkC canvas');if(!cv)return;const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='vtk.png';a.click();}
 function rst(){['x','y'].forEach(a=>{clipOn[a]=false;document.getElementById('tg'+a.toUpperCase()).classList.remove('on');});if(mapper)mapper.removeAllClippingPlanes();contourOn=false;document.getElementById('tgC').classList.remove('on');if(cActor){renderer.removeActor(cActor);cActor=null;}st('RESET');}
 
@@ -288,19 +315,19 @@ function upClip(a,v){document.getElementById('c'+a+'V').textContent=parseFloat(v
 function rebClip(){
   if(!mapper||!cpd)return;mapper.removeAllClippingPlanes();
   const b=cpd.getBounds();
-  if(clipOn.x){const v=parseFloat(document.getElementById('cxS').value),t=(v-sr[0])/(sr[1]-sr[0]+1e-10),wx=b[0]+t*(b[1]-b[0]),pl=vt.vtkPlane.newInstance();pl.setOrigin(wx,0,0);pl.setNormal(1,0,0);mapper.addClippingPlane(pl);}
-  if(clipOn.y){const v=parseFloat(document.getElementById('cyS').value),t=(v-sr[0])/(sr[1]-sr[0]+1e-10),wy=b[2]+t*(b[3]-b[2]),pl=vt.vtkPlane.newInstance();pl.setOrigin(0,wy,0);pl.setNormal(0,1,0);mapper.addClippingPlane(pl);}
+  if(clipOn.x){const v=parseFloat(document.getElementById('cxS').value),t=(v-sr[0])/(sr[1]-sr[0]+1e-10),wx=b[0]+t*(b[1]-b[0]),pl=vtkPlane.newInstance();pl.setOrigin(wx,0,0);pl.setNormal(1,0,0);mapper.addClippingPlane(pl);}
+  if(clipOn.y){const v=parseFloat(document.getElementById('cyS').value),t=(v-sr[0])/(sr[1]-sr[0]+1e-10),wy=b[2]+t*(b[3]-b[2]),pl=vtkPlane.newInstance();pl.setOrigin(0,wy,0);pl.setNormal(0,1,0);mapper.addClippingPlane(pl);}
 }
 function togContour(){contourOn=!contourOn;document.getElementById('tgC').classList.toggle('on',contourOn);if(contourOn)buildC();else{if(cActor){renderer.removeActor(cActor);cActor=null;}}}
 function upIso(v){document.getElementById('isoV').textContent=parseFloat(v).toFixed(2);if(contourOn)buildC();}
 function buildC(){
   if(cActor){renderer.removeActor(cActor);cActor=null;}
   if(!cpd||!cpd.getPointData().getScalars())return;
-  const _cf=vt.vtkContourFilter;const cf=_cf?_cf.newInstance():null;if(!cf){st('NO CONTOUR');return;}
+  const _cf=vtkContourFilter;const cf=_cf?_cf.newInstance():null;if(!cf){st('NO CONTOUR');return;}
   cf.setInputData(cpd);cf.setComputeNormals(true);
   cf.generateValues(1,parseFloat(document.getElementById('isoS').value),parseFloat(document.getElementById('isoS').value));
-  const cm=vt.vtkMapper.newInstance();cm.setInputConnection(cf.getOutputPort());cm.setScalarVisibility(false);
-  cActor=vt.vtkActor.newInstance();cActor.setMapper(cm);cActor.getProperty().setColor(.05,.05,.05);cActor.getProperty().setLineWidth(2);
+  const cm=vtkMapper.newInstance();cm.setInputConnection(cf.getOutputPort());cm.setScalarVisibility(false);
+  cActor=vtkActor.newInstance();cActor.setMapper(cm);cActor.getProperty().setColor(.05,.05,.05);cActor.getProperty().setLineWidth(2);
   renderer.addActor(cActor);
 }
 
