@@ -1,143 +1,332 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>3D Data Dashboard | vtk.js</title>
-    <script src="https://unpkg.com/vtk.js@28.16.0/dist/vtk.js"></script>
-    <style>
-        body { margin: 0; font-family: sans-serif; background: #111; color: white; overflow: hidden; }
-        #ui { position: absolute; top: 20px; left: 20px; z-index: 100; background: rgba(0,0,0,0.85); padding: 20px; border-radius: 12px; width: 260px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        #container { width: 100vw; height: 100vh; }
-        .control-group { margin-bottom: 15px; }
-        label { display: block; font-size: 11px; text-transform: uppercase; color: #888; margin-bottom: 8px; letter-spacing: 1px; }
-        input[type="file"], select, input[type="range"] { width: 100%; background: #222; color: white; border: 1px solid #444; padding: 8px; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; border-radius: 4px; border: none; background: #0070f3; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        button:hover { background: #0060df; }
-        h2 { margin: 0 0 15px 0; font-size: 18px; color: #0070f3; border-bottom: 1px solid #333; padding-bottom: 10px; }
-    </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>VTK Viewer</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  :root{--bg:#FF6B00;--dark:#1a0e00;--b:2px solid #1a0e00;}
+  body{background:var(--bg);color:var(--dark);font-family:'Arial Black',Arial,sans-serif;height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+  #top,#bot{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:42px;flex-shrink:0;}
+  #top{border-bottom:var(--b);}
+  #bot{border-top:var(--b);}
+  .nav{font-size:11px;font-weight:900;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;}
+  .logo{font-size:18px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;}
+  .yr{font-size:11px;font-weight:900;opacity:.5;letter-spacing:.1em;}
+  .pill{font-size:10px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;border:var(--b);padding:4px 12px;cursor:pointer;}
+  .pill:hover{background:var(--dark);color:var(--bg);}
+  #main{display:flex;flex:1;overflow:hidden;}
+  #left{width:210px;border-right:var(--b);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0;}
+  .sec{border-bottom:var(--b);padding:12px;}
+  .st{font-size:8px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px;opacity:.5;}
+  #drop{border:2px dashed var(--dark);padding:14px 8px;text-align:center;cursor:pointer;position:relative;}
+  #drop:hover{background:rgba(0,0,0,.08);}
+  #drop input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+  #drop .dt{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;line-height:1.7;}
+  .db{display:block;width:100%;padding:6px 8px;margin-bottom:4px;background:transparent;border:var(--b);font-family:'Arial Black',Arial,sans-serif;font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;cursor:pointer;text-align:left;}
+  .db:hover{background:var(--dark);color:var(--bg);}
+  .db:last-child{margin-bottom:0;}
+  .cmg{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+  .cb{border:var(--b);cursor:pointer;}
+  .cb.active{outline:3px solid var(--dark);outline-offset:1px;}
+  .cb canvas{display:block;width:100%;height:12px;}
+  .cbl{font-size:7px;font-weight:900;text-transform:uppercase;text-align:center;padding:2px 0;letter-spacing:.05em;}
+  .mr{display:flex;gap:4px;}
+  .mb{flex:1;padding:5px 0;border:var(--b);background:transparent;font-family:'Arial Black',Arial,sans-serif;font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;}
+  .mb.active,.mb:hover{background:var(--dark);color:var(--bg);}
+  .sr{margin-bottom:7px;}
+  .sr:last-child{margin-bottom:0;}
+  .sl{display:flex;justify-content:space-between;font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px;}
+  input[type=range]{width:100%;height:3px;appearance:none;background:var(--dark);outline:none;cursor:pointer;}
+  input[type=range]::-webkit-slider-thumb{appearance:none;width:11px;height:11px;background:var(--dark);cursor:pointer;}
+  .tr{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
+  .tl{font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;}
+  .tg{width:28px;height:13px;background:rgba(0,0,0,.15);border:var(--b);cursor:pointer;position:relative;flex-shrink:0;}
+  .tg.on{background:var(--dark);}
+  .tg::after{content:'';position:absolute;top:0;left:0;width:9px;height:9px;background:var(--bg);border:1px solid var(--dark);transition:left .1s;}
+  .tg.on::after{left:15px;}
+  #vp{flex:1;position:relative;overflow:hidden;}
+  #vtkC{width:100%;height:100%;}
+  #info{position:absolute;top:0;left:0;padding:8px 12px;font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.1em;line-height:2;pointer-events:none;}
+  #empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+  .stamp{border:4px solid var(--dark);padding:14px 20px;font-size:20px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;line-height:1.2;opacity:.18;transform:rotate(-8deg);}
+  #sb{position:absolute;right:0;top:0;bottom:42px;width:34px;display:flex;flex-direction:column;align-items:center;padding:8px 0;gap:3px;opacity:0;transition:opacity .3s;border-left:var(--b);}
+  #sb.show{opacity:1;}
+  #sb canvas{flex:1;width:18px;}
+  #sb .sv{font-size:7px;font-weight:900;letter-spacing:.04em;}
+  #axcv{position:absolute;bottom:42px;right:34px;width:56px;height:56px;border-top:var(--b);border-left:var(--b);}
+  #tb{position:absolute;bottom:0;left:0;right:0;display:flex;border-top:var(--b);}
+  .tb{flex:1;padding:8px 0;border:none;border-right:var(--b);background:transparent;font-family:'Arial Black',Arial,sans-serif;font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;}
+  .tb:last-child{border-right:none;}
+  .tb.active,.tb:hover{background:var(--dark);color:var(--bg);}
+</style>
 </head>
 <body>
 
-<div id="ui">
-    <h2>3D Data Portal</h2>
-    
-    <div class="control-group">
-        <label>Step 1: Upload .vtp / .vtk</label>
-        <input type="file" id="fileInput" />
-    </div>
-
-    <div class="control-group">
-        <label>Step 2: Coloring</label>
-        <select id="colorMap">
-            <option value="erdc_rainbow_dark">Rainbow</option>
-            <option value="Cool to Warm">Cool to Warm</option>
-            <option value="Viridis (matplotlib)">Viridis</option>
-        </select>
-    </div>
-
-    <div class="control-group">
-        <label>Step 3: Remote Clip (Z-Plane)</label>
-        <input type="range" id="clipRange" min="0" max="100" value="100">
-    </div>
-
-    <button id="resetCam">Reset View</button>
+<div id="top">
+  <span class="nav">←</span>
+  <span style="display:flex;align-items:center;gap:10px;">
+    <span class="yr">20</span>
+    <span class="logo">VTK Viewer</span>
+    <span class="yr">25</span>
+  </span>
+  <span class="nav">⊞</span>
 </div>
 
-<div id="container"></div>
+<div id="main">
+  <aside id="left">
+    <div class="sec">
+      <div class="st">Load</div>
+      <div id="drop">
+        <input type="file" id="fi" accept=".vtk,.vtp,.vtu,.obj"/>
+        <div class="dt">Drop .vtk / .vtp<br/>or click</div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="st">Demo</div>
+      <button class="db" onclick="loadDemo('sphere')">01 — Sphere</button>
+      <button class="db" onclick="loadDemo('cone')">02 — Cone</button>
+      <button class="db" onclick="loadDemo('wavelet')">03 — Wavelet</button>
+      <button class="db" onclick="loadDemo('torus')">04 — Torus</button>
+    </div>
+    <div class="sec">
+      <div class="st">Colormap</div>
+      <div class="cmg" id="cmg"></div>
+    </div>
+    <div class="sec">
+      <div class="st">Mode</div>
+      <div class="mr">
+        <button class="mb active" onclick="setMode(this,'surface')">Surf</button>
+        <button class="mb" onclick="setMode(this,'wireframe')">Wire</button>
+        <button class="mb" onclick="setMode(this,'points')">Pts</button>
+      </div>
+    </div>
+    <div class="sec" style="flex:1;">
+      <div class="st">Controls</div>
+      <div class="sr"><div class="sl">Opacity<span id="opV">1.0</span></div><input type="range" id="opS" min="0" max="1" step=".01" value="1" oninput="setOp(this.value)"/></div>
+      <div style="margin-top:10px;">
+        <div class="sr"><div class="sl">Clip X<span id="cxV">0.0</span></div><input type="range" id="cxS" min="-1" max="1" step=".01" value="0" oninput="upClip('x',this.value)"/></div>
+        <div class="tr"><span class="tl">Clip X</span><div class="tg" id="tgX" onclick="togClip('x')"></div></div>
+        <div class="sr"><div class="sl">Clip Y<span id="cyV">0.0</span></div><input type="range" id="cyS" min="-1" max="1" step=".01" value="0" oninput="upClip('y',this.value)"/></div>
+        <div class="tr"><span class="tl">Clip Y</span><div class="tg" id="tgY" onclick="togClip('y')"></div></div>
+        <div class="sr" style="margin-top:10px;"><div class="sl">Iso Val<span id="isoV">0.5</span></div><input type="range" id="isoS" min="0" max="1" step=".01" value=".5" oninput="upIso(this.value)"/></div>
+        <div class="tr"><span class="tl">Contour</span><div class="tg" id="tgC" onclick="togContour()"></div></div>
+      </div>
+    </div>
+  </aside>
 
+  <div id="vp">
+    <div id="vtkC"></div>
+    <div id="info"><span id="iPts">Pts —</span><br/><span id="iCells">Cells —</span><br/><span id="iArr">Array —</span></div>
+    <div id="empty"><div class="stamp">VTK<br/>VIEWER<br/>EST. 25</div></div>
+    <div id="sb"><span class="sv" id="sbMax">1.0</span><canvas id="sbCv" width="18" height="200"></canvas><span class="sv" id="sbMin">0.0</span></div>
+    <canvas id="axcv"></canvas>
+    <div id="tb">
+      <button class="tb active" id="btnR" onclick="setInt('R')">Rotate</button>
+      <button class="tb" id="btnP" onclick="setInt('P')">Pan</button>
+      <button class="tb" id="btnZ" onclick="setInt('Z')">Zoom</button>
+      <button class="tb" onclick="renderer.resetCamera()">Fit</button>
+      <button class="tb" onclick="shot()">Shot</button>
+      <button class="tb" onclick="rst()">Reset</button>
+    </div>
+  </div>
+</div>
+
+<div id="bot">
+  <span class="nav">×</span>
+  <span style="display:flex;align-items:center;gap:10px;">
+    <span class="yr">20</span><span class="logo">VTK Viewer</span><span class="yr">25</span>
+  </span>
+  <span class="pill" id="status">IDLE</span>
+</div>
+
+<!-- Use a well-known stable vtk.js build that reliably exposes window.vtk -->
+<script src="https://unpkg.com/vtk.js@15.14.0/vtk.js"></script>
 <script>
-    // Access vtk globally from the CDN script
-    const vtkRenderWindow = vtk.Rendering.Core.vtkRenderWindow;
-    const vtkRenderer = vtk.Rendering.Core.vtkRenderer;
-    const vtkOpenGLRenderWindow = vtk.Rendering.OpenGL.vtkRenderWindow;
-    const vtkRenderWindowInteractor = vtk.Rendering.Core.vtkRenderWindowInteractor;
-    const vtkInteractorStyleTrackballCamera = vtk.Interaction.Style.vtkInteractorStyleTrackballCamera;
-    const vtkActor = vtk.Rendering.Core.vtkActor;
-    const vtkMapper = vtk.Rendering.Core.vtkMapper;
-    const vtkXMLPolyDataReader = vtk.IO.XML.vtkXMLPolyDataReader;
-    const vtkClipPolyData = vtk.Filters.General.vtkClipPolyData;
-    const vtkPlane = vtk.Common.DataModel.vtkPlane;
+// vtk.js v15 UMD bundle exposes window.vtk as a flat object with short names
+// e.g. window.vtk.vtkRenderWindow, window.vtk.vtkSphereSource etc.
+let vt;
 
-    // --- Setup Rendering Pipeline ---
-    const container = document.querySelector('#container');
-    const renderWindow = vtkRenderWindow.newInstance();
-    const renderer = vtkRenderer.newInstance({ background: [0.1, 0.1, 0.1] });
-    renderWindow.addRenderer(renderer);
+function setupVTK(){
+  const ns=window.vtk;
+  if(!ns){st('NO VTK');return false;}
+  // Build a lookup: short name → class, searching the flat namespace
+  const map={};
+  for(const key of Object.keys(ns)){
+    const cls=ns[key];
+    if(cls&&cls.newInstance){
+      // key might be full path like 'Rendering/Core/vtkRenderer' or just 'vtkRenderer'
+      const short=key.split('/').pop();
+      map[short]=cls;
+    }
+  }
+  // Also check if ns itself is the class container with direct short keys
+  vt=new Proxy(map,{get:(t,name)=>{
+    if(t[name]) return t[name];
+    // fallback: direct on ns
+    if(ns[name]&&ns[name].newInstance) return ns[name];
+    console.error('vtk class not found:',name,'available:',Object.keys(t).slice(0,10));
+    return null;
+  }});
+  return true;
+}
 
-    const openglRenderWindow = vtkOpenGLRenderWindow.newInstance();
-    renderWindow.addView(openglRenderWindow);
-    openglRenderWindow.setContainer(container);
+let renderer,renderWindow,interactor,actor,mapper,cpd,sr=[0,1];
+let clipOn={x:false,y:false},contourOn=false,cActor=null;
+const MAPS={
+  Rainbow:[[0,0,255],[0,255,255],[0,255,0],[255,255,0],[255,0,0]],
+  Plasma:[[13,8,135],[204,71,120],[240,249,33]],
+  Viridis:[[68,1,84],[33,145,140],[253,231,37]],
+  Hot:[[0,0,0],[255,0,0],[255,255,255]],
+};
+let activeCM='Rainbow';
 
-    const interactor = vtkRenderWindowInteractor.newInstance();
-    interactor.setView(openglRenderWindow);
-    interactor.initialize();
-    interactor.bindEvents(container);
-    interactor.setInteractorStyle(vtkInteractorStyleTrackballCamera.newInstance());
+function init(){
+  if(!setupVTK()) return;
+  const c=document.getElementById('vtkC');
+  renderWindow=vt.vtkRenderWindow.newInstance();
+  renderer=vt.vtkRenderer.newInstance({background:[1,0.42,0]});
+  renderWindow.addRenderer(renderer);
+  const glw=vt.vtkOpenGLRenderWindow.newInstance();
+  glw.setContainer(c);renderWindow.addView(glw);
+  const{width:w,height:h}=c.getBoundingClientRect();glw.setSize(w||800,h||500);
+  new ResizeObserver(()=>{const{width:w,height:h}=c.getBoundingClientRect();glw.setSize(w,h);}).observe(c);
+  interactor=vt.vtkRenderWindowInteractor.newInstance();
+  interactor.setView(glw);interactor.initialize();
+  interactor.setInteractorStyle(vt.vtkInteractorStyleTrackballCamera.newInstance());
+  buildCM();
+  (function loop(){requestAnimationFrame(loop);drawAxes();renderWindow.render();})();
+  st('READY');
+}
 
-    // Setup Global Pipeline Objects
-    const reader = vtkXMLPolyDataReader.newInstance();
-    const mapper = vtkMapper.newInstance();
-    const actor = vtkActor.newInstance();
-    const clipper = vtkClipPolyData.newInstance();
-    const clipPlane = vtkPlane.newInstance();
+function buildCM(){
+  const g=document.getElementById('cmg');g.innerHTML='';
+  for(const[n,s] of Object.entries(MAPS)){
+    const d=document.createElement('div');d.className='cb'+(n===activeCM?' active':'');
+    d.innerHTML=`<canvas width="100" height="12"></canvas><div class="cbl">${n}</div>`;
+    d.onclick=()=>{document.querySelectorAll('.cb').forEach(b=>b.classList.remove('active'));d.classList.add('active');activeCM=n;applyCM();};
+    drawBar(d.querySelector('canvas'),s);g.appendChild(d);
+  }
+}
+function drawBar(cv,stops){const ctx=cv.getContext('2d'),g=ctx.createLinearGradient(0,0,cv.width,0);stops.forEach((c,i)=>g.addColorStop(i/(stops.length-1),`rgb(${c})`));ctx.fillStyle=g;ctx.fillRect(0,0,cv.width,cv.height);}
+function applyCM(){
+  if(!mapper||!cpd)return;
+  const lut=vt.vtkColorTransferFunction.newInstance();
+  MAPS[activeCM].forEach((c,i)=>{const t=sr[0]+i/(MAPS[activeCM].length-1)*(sr[1]-sr[0]);lut.addRGBPoint(t,c[0]/255,c[1]/255,c[2]/255);});
+  mapper.setLookupTable(lut);mapper.setUseLookupTableScalarRange(true);mapper.modified();drawSB();
+}
+function drawSB(){
+  const cv=document.getElementById('sbCv'),ctx=cv.getContext('2d');
+  const g=ctx.createLinearGradient(0,cv.height,0,0);
+  MAPS[activeCM].forEach((c,i)=>g.addColorStop(i/(MAPS[activeCM].length-1),`rgb(${c})`));
+  ctx.fillStyle=g;ctx.fillRect(0,0,cv.width,cv.height);
+  document.getElementById('sbMin').textContent=sr[0].toFixed(2);
+  document.getElementById('sbMax').textContent=sr[1].toFixed(2);
+  document.getElementById('sb').classList.add('show');
+}
+function st(t){document.getElementById('status').textContent=t;}
+function fmt(n){return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':n;}
 
-    // Logic: Reader -> Clipper -> Mapper -> Actor
-    clipper.setClipFunction(clipPlane);
-    clipper.setInputConnection(reader.getOutputPort());
-    mapper.setInputConnection(clipper.getOutputPort());
-    actor.setMapper(mapper);
+function display(pd,lbl){
+  clr();cpd=pd;
+  mapper=vt.vtkMapper.newInstance();mapper.setInputData(pd);
+  const sc=pd.getPointData().getScalars();
+  if(sc){sr=sc.getRange();mapper.setScalarRange(sr[0],sr[1]);mapper.setScalarVisibility(true);applyCM();}
+  else{mapper.setScalarVisibility(false);document.getElementById('sb').classList.remove('show');}
+  actor=vt.vtkActor.newInstance();actor.setMapper(mapper);
+  actor.getProperty().setOpacity(parseFloat(document.getElementById('opS').value));
+  renderer.addActor(actor);
+  document.getElementById('iPts').textContent='Pts '+fmt(pd.getNumberOfPoints());
+  document.getElementById('iCells').textContent='Cells '+fmt(pd.getNumberOfCells());
+  document.getElementById('iArr').textContent='Array '+(sc?sc.getName():'none');
+  document.getElementById('empty').style.display='none';
+  renderer.resetCamera();st('LOADED');
+  if(sc){
+    ['x','y'].forEach(a=>{const s=document.getElementById('c'+a+'S');s.min=sr[0];s.max=sr[1];s.value=(sr[0]+sr[1])/2;});
+    const is=document.getElementById('isoS');is.min=sr[0];is.max=sr[1];is.value=(sr[0]+sr[1])/2;
+  }
+}
+function clr(){
+  if(actor){renderer.removeActor(actor);actor=null;mapper=null;}
+  if(cActor){renderer.removeActor(cActor);cActor=null;}
+  clipOn={x:false,y:false};contourOn=false;
+  ['X','Y','C'].forEach(a=>document.getElementById('tg'+a).classList.remove('on'));
+}
 
-    // --- Handle File Upload ---
-    document.getElementById('fileInput').addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+function loadDemo(t){st('GEN...');setTimeout(()=>display(t==='sphere'?mkSph():t==='cone'?mkCone():t==='wavelet'?mkWave():mkTorus(),t),40);}
+function mkSph(){const s=vt.vtkSphereSource.newInstance({thetaResolution:64,phiResolution:64});const pd=s.getOutputData();const p=pd.getPoints().getData(),n=p.length/3,sc=new Float32Array(n);for(let i=0;i<n;i++)sc[i]=Math.sin(p[i*3]*6+p[i*3+1]*4+p[i*3+2]*5)*.5+.5;pd.getPointData().setScalars(vt.vtkDataArray.newInstance({name:'Scalar',values:sc}));return pd;}
+function mkCone(){const s=vt.vtkConeSource.newInstance({resolution:128,height:2});const pd=s.getOutputData();const p=pd.getPoints().getData(),n=p.length/3,sc=new Float32Array(n);for(let i=0;i<n;i++)sc[i]=(p[i*3+1]+1)/2;pd.getPointData().setScalars(vt.vtkDataArray.newInstance({name:'Height',values:sc}));return pd;}
+function mkWave(){const s=vt.vtkSphereSource.newInstance({thetaResolution:80,phiResolution:80});const pd=s.getOutputData();const p=pd.getPoints().getData(),n=p.length/3,sc=new Float32Array(n);for(let i=0;i<n;i++)sc[i]=.5+.3*Math.sin(10*p[i*3])*Math.cos(8*p[i*3+1])+.2*Math.cos(6*p[i*3+2]);pd.getPointData().setScalars(vt.vtkDataArray.newInstance({name:'Wave',values:sc}));return pd;}
+function mkTorus(){const R=1,r=.4,nu=80,nv=40,pts=[],polys=[],sc=[];for(let i=0;i<nu;i++){const u=2*Math.PI*i/nu;for(let j=0;j<nv;j++){const v=2*Math.PI*j/nv;pts.push((R+r*Math.cos(v))*Math.cos(u),(R+r*Math.cos(v))*Math.sin(u),r*Math.sin(v));sc.push(Math.sin(3*u+2*v)*.5+.5);}}for(let i=0;i<nu;i++)for(let j=0;j<nv;j++){const a=i*nv+j,b=((i+1)%nu)*nv+j,c=((i+1)%nu)*nv+(j+1)%nv,d=i*nv+(j+1)%nv;polys.push(4,a,b,c,d);}const pd=vt.vtkPolyData.newInstance(),pp=vt.vtkPoints.newInstance();pp.setData(new Float32Array(pts),3);pd.setPoints(pp);const cl=vt.vtkCellArray.newInstance();cl.setData(new Int32Array(polys));pd.setPolys(cl);pd.getPointData().setScalars(vt.vtkDataArray.newInstance({name:'Scalar',values:new Float32Array(sc)}));return pd;}
 
-        const fileReader = new FileReader();
-        fileReader.onload = function() {
-            // FIX: Ensure we use the correct method for vtk.js global
-            reader.parseAsArrayBuffer(fileReader.result);
-            
-            const polyData = reader.getOutputData();
-            const bounds = polyData.getBounds();
-            
-            // Set default clip plane to top of object
-            clipPlane.setOrigin(0, 0, bounds[5]);
-            clipPlane.setNormal(0, 0, 1);
+document.getElementById('fi').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;st('LOAD...');
+  const ext=f.name.split('.').pop().toLowerCase(),fr=new FileReader();
+  fr.onload=ev=>{try{
+    let pd;
+    if(ext==='vtp'){const r=vt.vtkXMLPolyDataReader.newInstance();r.parseAsArrayBuffer(ev.target.result);pd=r.getOutputData(0);}
+    else if(ext==='obj'){const r=vt.vtkOBJReader.newInstance({splitMode:'usemtl'});r.parseAsText(new TextDecoder().decode(ev.target.result));pd=r.getOutputData(0);}
+    else{const r=vt.vtkPolyDataReader.newInstance();r.parseAsArrayBuffer(ev.target.result);pd=r.getOutputData(0);}
+    if(!pd)throw 0;display(pd,f.name);
+  }catch{st('ERR');}};
+  fr.readAsArrayBuffer(f);
+});
+const dz=document.getElementById('drop');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.background='rgba(0,0,0,.1)';});
+dz.addEventListener('dragleave',()=>dz.style.background='');
+dz.addEventListener('drop',e=>{e.preventDefault();dz.style.background='';if(e.dataTransfer.files[0]){document.getElementById('fi').files=e.dataTransfer.files;document.getElementById('fi').dispatchEvent(new Event('change'));}});
 
-            renderer.addActor(actor);
-            renderer.resetCamera();
-            renderWindow.render();
-        };
-        fileReader.readAsArrayBuffer(file);
-    });
+function setMode(btn,m){document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');if(!actor)return;const p=actor.getProperty();m==='surface'?p.setRepresentationToSurface():m==='wireframe'?p.setRepresentationToWireframe():p.setRepresentationToPoints();}
+function setOp(v){document.getElementById('opV').textContent=parseFloat(v).toFixed(1);if(actor)actor.getProperty().setOpacity(parseFloat(v));}
+function setInt(k){['R','P','Z'].forEach(x=>document.getElementById('btn'+x).classList.remove('active'));document.getElementById('btn'+k).classList.add('active');interactor.setInteractorStyle(vt.vtkInteractorStyleTrackballCamera.newInstance());}
+function shot(){const cv=document.querySelector('#vtkC canvas');if(!cv)return;const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='vtk.png';a.click();}
+function rst(){['x','y'].forEach(a=>{clipOn[a]=false;document.getElementById('tg'+a.toUpperCase()).classList.remove('on');});if(mapper)mapper.removeAllClippingPlanes();contourOn=false;document.getElementById('tgC').classList.remove('on');if(cActor){renderer.removeActor(cActor);cActor=null;}st('RESET');}
 
-    // --- Handle Clipping ---
-    document.getElementById('clipRange').addEventListener('input', (e) => {
-        if (!reader.getOutputData()) return;
-        
-        const bounds = reader.getOutputData().getBounds();
-        const zMin = bounds[4];
-        const zMax = bounds[5];
-        const zPos = zMin + (zMax - zMin) * (e.target.value / 100);
-        
-        clipPlane.setOrigin(0, 0, zPos);
-        renderWindow.render();
-    });
+function togClip(a){clipOn[a]=!clipOn[a];document.getElementById('tg'+a.toUpperCase()).classList.toggle('on',clipOn[a]);rebClip();}
+function upClip(a,v){document.getElementById('c'+a+'V').textContent=parseFloat(v).toFixed(2);if(clipOn[a])rebClip();}
+function rebClip(){
+  if(!mapper||!cpd)return;mapper.removeAllClippingPlanes();
+  const b=cpd.getBounds();
+  if(clipOn.x){const v=parseFloat(document.getElementById('cxS').value),t=(v-sr[0])/(sr[1]-sr[0]+1e-10),wx=b[0]+t*(b[1]-b[0]),pl=vt.vtkPlane.newInstance();pl.setOrigin(wx,0,0);pl.setNormal(1,0,0);mapper.addClippingPlane(pl);}
+  if(clipOn.y){const v=parseFloat(document.getElementById('cyS').value),t=(v-sr[0])/(sr[1]-sr[0]+1e-10),wy=b[2]+t*(b[3]-b[2]),pl=vt.vtkPlane.newInstance();pl.setOrigin(0,wy,0);pl.setNormal(0,1,0);mapper.addClippingPlane(pl);}
+}
+function togContour(){contourOn=!contourOn;document.getElementById('tgC').classList.toggle('on',contourOn);if(contourOn)buildC();else{if(cActor){renderer.removeActor(cActor);cActor=null;}}}
+function upIso(v){document.getElementById('isoV').textContent=parseFloat(v).toFixed(2);if(contourOn)buildC();}
+function buildC(){
+  if(cActor){renderer.removeActor(cActor);cActor=null;}
+  if(!cpd||!cpd.getPointData().getScalars())return;
+  const _cf=vt.vtkContourFilter;const cf=_cf?_cf.newInstance():null;if(!cf){st('NO CONTOUR');return;}
+  cf.setInputData(cpd);cf.setComputeNormals(true);
+  cf.generateValues(1,parseFloat(document.getElementById('isoS').value),parseFloat(document.getElementById('isoS').value));
+  const cm=vt.vtkMapper.newInstance();cm.setInputConnection(cf.getOutputPort());cm.setScalarVisibility(false);
+  cActor=vt.vtkActor.newInstance();cActor.setMapper(cm);cActor.getProperty().setColor(.05,.05,.05);cActor.getProperty().setLineWidth(2);
+  renderer.addActor(cActor);
+}
 
-    // --- Window Resize & UI ---
-    window.addEventListener('resize', () => {
-        const dims = container.getBoundingClientRect();
-        openglRenderWindow.setSize(dims.width, dims.height);
-        renderWindow.render();
-    });
+function drawAxes(){
+  const cv=document.getElementById('axcv');cv.width=56;cv.height=56;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,56,56);
+  if(!renderer)return;
+  const m=renderer.getActiveCamera().getViewMatrix(),cx=28,cy=28,len=20;
+  [[m[0],m[4],'#cc2200','X'],[m[1],m[5],'#006600','Y'],[m[2],m[6],'#003399','Z']].forEach(([ax,ay,col,lab])=>{
+    const ex=cx+ax*len,ey=cy-ay*len;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ex,ey);ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.stroke();
+    ctx.fillStyle=col;ctx.font='bold 8px Arial';ctx.fillText(lab,ex+2,ey+3);
+  });
+}
 
-    document.getElementById('resetCam').onclick = () => {
-        renderer.resetCamera();
-        renderWindow.render();
-    };
-
-    // Initial Trigger for Resize
-    window.dispatchEvent(new Event('resize'));
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    if(!window.vtk){
+      document.getElementById('status').textContent='VTK ERR';
+      console.error('window.vtk not found. Keys starting with vtk:',Object.keys(window).filter(k=>k.startsWith('vtk')));
+      return;
+    }
+    init();
+    setTimeout(()=>loadDemo('sphere'),200);
+  },300);
+});
 </script>
 </body>
 </html>
