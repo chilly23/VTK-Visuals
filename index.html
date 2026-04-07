@@ -73,7 +73,6 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:11px;height:11px;b
 </style>
 </head>
 <body>
-
 <div id="top">
   <span class="nav">←</span>
   <span style="display:flex;align-items:center;gap:10px;">
@@ -81,10 +80,8 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:11px;height:11px;b
   </span>
   <span class="nav">⊞</span>
 </div>
-
 <div id="main">
 <aside id="left">
-
   <div class="sec">
     <div class="st">Import File</div>
     <div id="drop">
@@ -100,7 +97,6 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:11px;height:11px;b
       <button id="urlBtn" onclick="loadURL()">Fetch</button>
     </div>
   </div>
-
   <div class="sec">
     <div class="st">Shapes</div>
     <button class="db" onclick="loadDemo('sphere')">01 — Sphere</button>
@@ -112,12 +108,10 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:11px;height:11px;b
     <button class="db" onclick="loadDemo('mobius')">07 — Möbius Strip</button>
     <button class="db" onclick="loadDemo('cube')">08 — Sphere Cube</button>
   </div>
-
   <div class="sec">
     <div class="st">Colormap</div>
     <div class="cmg" id="cmg"></div>
   </div>
-
   <div class="sec">
     <div class="st">Mode</div>
     <div class="mr">
@@ -126,7 +120,6 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:11px;height:11px;b
       <button class="mb" onclick="setMode(this,'points')">Pts</button>
     </div>
   </div>
-
   <div class="sec" style="flex:1;">
     <div class="st">Controls</div>
     <div class="sr"><div class="sl">Opacity<span id="opV">1.0</span></div><input type="range" id="opS" min="0" max="1" step=".01" value="1" oninput="setOp(this.value)"/></div>
@@ -147,9 +140,7 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:11px;height:11px;b
       </div>
     </div>
   </div>
-
 </aside>
-
 <div id="vp">
   <div id="vtkC"></div>
   <div id="info"><span id="iPts">Pts —</span><br/><span id="iCells">Cells —</span><br/><span id="iArr">Array —</span></div>
@@ -167,7 +158,6 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:11px;height:11px;b
   </div>
 </div>
 </div>
-
 <div id="bot">
   <span class="nav">×</span>
   <span style="display:flex;align-items:center;gap:10px;">
@@ -176,7 +166,8 @@ input[type=range]::-webkit-slider-thumb{appearance:none;width:11px;height:11px;b
   <span class="pill" id="status">IDLE</span>
 </div>
 
-<script src="https://unpkg.com/vtk.js"></script>
+<!-- Pin to a specific vtk.js release that has stable IO modules -->
+<script src="https://unpkg.com/vtk.js@28.10.1/vtk.js"></script>
 <script>
 // ─── vtk aliases ──────────────────────────────────────────────────────────────
 let vtkRW,vtkRen,vtkGLW,vtkRWI,vtkISTB,
@@ -185,28 +176,33 @@ let vtkRW,vtkRen,vtkGLW,vtkRWI,vtkISTB,
     vtkPlane,vtkCF,vtkPDR,vtkXMLPDR,vtkOBJR;
 
 function setupVTK(){
-  const v=window.vtk;if(!v){st('NO VTK');return false;}
+  const v=window.vtk;
+  if(!v){st('NO VTK');return false;}
   try{
-    vtkRW=v.Rendering.Core.vtkRenderWindow;
-    vtkRen=v.Rendering.Core.vtkRenderer;
-    vtkGLW=v.Rendering.OpenGL.vtkRenderWindow;
-    vtkRWI=v.Rendering.Core.vtkRenderWindowInteractor;
-    vtkISTB=v.Interaction.Style.vtkInteractorStyleTrackballCamera;
-    vtkActor=v.Rendering.Core.vtkActor;
-    vtkMapper=v.Rendering.Core.vtkMapper;
-    vtkCTF=v.Rendering.Core.vtkColorTransferFunction;
-    vtkSphere=v.Filters.Sources.vtkSphereSource;
-    vtkCone=v.Filters.Sources.vtkConeSource;
-    vtkPD=v.Common.DataModel.vtkPolyData;
-    vtkPlane=v.Common.DataModel.vtkPlane;
-    vtkPts=v.Common.Core.vtkPoints;
-    vtkCA=v.Common.Core.vtkCellArray;
-    vtkDA=v.Common.Core.vtkDataArray;
-    vtkCF=v.Filters.General.vtkContourFilter;
-    vtkPDR=v.IO.Legacy.vtkPolyDataReader;
-    vtkXMLPDR=v.IO.XML.vtkXMLPolyDataReader;
-    vtkOBJR=v.IO.Misc.vtkOBJReader;
-  }catch(e){console.error(e);st('VTK ERR');return false;}
+    vtkRW   = v.Rendering.Core.vtkRenderWindow;
+    vtkRen  = v.Rendering.Core.vtkRenderer;
+    vtkGLW  = v.Rendering.OpenGL.vtkRenderWindow;
+    vtkRWI  = v.Rendering.Core.vtkRenderWindowInteractor;
+    vtkISTB = v.Interaction.Style.vtkInteractorStyleTrackballCamera;
+    vtkActor  = v.Rendering.Core.vtkActor;
+    vtkMapper = v.Rendering.Core.vtkMapper;
+    vtkCTF    = v.Rendering.Core.vtkColorTransferFunction;
+    vtkSphere = v.Filters.Sources.vtkSphereSource;
+    vtkCone   = v.Filters.Sources.vtkConeSource;
+    vtkPD     = v.Common.DataModel.vtkPolyData;
+    vtkPlane  = v.Common.DataModel.vtkPlane;
+    vtkPts    = v.Common.Core.vtkPoints;
+    vtkCA     = v.Common.Core.vtkCellArray;
+    vtkDA     = v.Common.Core.vtkDataArray;
+    vtkCF     = v.Filters.General.vtkContourFilter;
+    vtkPDR    = v.IO.Legacy.vtkPolyDataReader;
+    vtkXMLPDR = v.IO.XML.vtkXMLPolyDataReader;
+    vtkOBJR   = v.IO.Misc.vtkOBJReader;
+  }catch(e){
+    console.error('VTK setup error:',e);
+    st('VTK ERR');
+    return false;
+  }
   return true;
 }
 
@@ -214,7 +210,6 @@ function setupVTK(){
 let renderer,renderWindow,glWin,interactor;
 let actor,mapper,cpd,sr=[0,1];
 let clipOn={x:false,y:false},contourOn=false,cActor=null;
-
 const MAPS={
   Rainbow:[[0,0,255],[0,255,255],[0,255,0],[255,255,0],[255,0,0]],
   Plasma:[[13,8,135],[204,71,120],[240,249,33]],
@@ -225,19 +220,25 @@ const MAPS={
 };
 let activeCM='Rainbow';
 
-// ─── sidebar load progress (file / URL import only) ───────────────────────────
+// ─── sidebar load progress ────────────────────────────────────────────────────
 let _slt=null;
 function sideLoadStart(label){
   document.getElementById('sideLoadLabel').textContent=label||'Reading…';
   document.getElementById('sideLoadFill').style.width='0%';
   document.getElementById('sideLoad').classList.add('show');
   let p=0;clearInterval(_slt);
-  _slt=setInterval(()=>{p=Math.min(p+Math.random()*12,88);
-    document.getElementById('sideLoadFill').style.width=p.toFixed(0)+'%';},120);
+  _slt=setInterval(()=>{
+    p=Math.min(p+Math.random()*12,88);
+    document.getElementById('sideLoadFill').style.width=p.toFixed(0)+'%';
+  },120);
 }
-function sideLoadPct(p){clearInterval(_slt);document.getElementById('sideLoadFill').style.width=Math.round(p)+'%';}
+function sideLoadPct(p){
+  clearInterval(_slt);
+  document.getElementById('sideLoadFill').style.width=Math.round(p)+'%';
+}
 function sideLoadDone(){
-  clearInterval(_slt);document.getElementById('sideLoadFill').style.width='100%';
+  clearInterval(_slt);
+  document.getElementById('sideLoadFill').style.width='100%';
   setTimeout(()=>document.getElementById('sideLoad').classList.remove('show'),500);
 }
 
@@ -245,41 +246,50 @@ function sideLoadDone(){
 function init(){
   if(!setupVTK())return;
   const c=document.getElementById('vtkC');
+
   renderWindow=vtkRW.newInstance();
   renderer=vtkRen.newInstance({background:[0.11,0.11,0.12]});
   renderWindow.addRenderer(renderer);
+
   glWin=vtkGLW.newInstance();
   glWin.setContainer(c);
   renderWindow.addView(glWin);
+
   const{width:w,height:h}=c.getBoundingClientRect();
   glWin.setSize(w||800,h||500);
-  new ResizeObserver(()=>{const{width:ww,height:hh}=c.getBoundingClientRect();glWin.setSize(ww,hh);}).observe(c);
+  new ResizeObserver(()=>{
+    const{width:ww,height:hh}=c.getBoundingClientRect();
+    glWin.setSize(ww,hh);
+  }).observe(c);
+
   interactor=vtkRWI.newInstance();
   interactor.setView(glWin);
   interactor.initialize();
   interactor.setInteractorStyle(vtkISTB.newInstance());
 
-  // ── Mouse remapping ────────────────────────────────────────────────────────
-  // Default vtk.js TrackballCamera: LMB=rotate, MMB=pan, RMB=dolly.
-  // Goal: LMB=rotate, RMB=pan, Scroll/MMB=zoom.
-  //
-  // Fix: intercept RMB mousedown/move/up in capture phase on the container,
-  // stop vtk from seeing the real RMB, fire a fake MMB event at the vtk canvas
-  // so vtk's pan handler activates. Then intercept wheel and drive dolly directly.
-
+  // ── Mouse remapping ──────────────────────────────────────────────────────
+  // FIX: guard flag prevents re-entrant fakeMMB calls (was causing
+  //      "Maximum call stack size exceeded" because the synthesised event
+  //      bubbled back to window and triggered the handler again).
   const getCanvas=()=>c.querySelector('canvas');
+  let _dispatchingFake=false;   // ← recursion guard
 
   function fakeMMB(type,src,btn,btns){
-    const cv=getCanvas();if(!cv)return;
+    if(_dispatchingFake)return;   // ← bail if we're already inside
+    const cv=getCanvas();
+    if(!cv)return;
+    _dispatchingFake=true;
     cv.dispatchEvent(new MouseEvent(type,{
-      bubbles:true,cancelable:true,
-      clientX:src.clientX,clientY:src.clientY,
+      bubbles:false,           // ← don't bubble; kills the re-entry path too
+      cancelable:true,
+      clientX:src.clientX,   clientY:src.clientY,
       screenX:src.screenX||0,screenY:src.screenY||0,
       movementX:src.movementX||0,movementY:src.movementY||0,
       button:btn,buttons:btns,
       ctrlKey:src.ctrlKey,shiftKey:src.shiftKey,altKey:src.altKey,
       view:window
     }));
+    _dispatchingFake=false;
   }
 
   let rmbActive=false;
@@ -302,7 +312,7 @@ function init(){
   },true);
   c.addEventListener('contextmenu',e=>e.preventDefault(),true);
 
-  // Scroll → dolly camera directly, bypass vtk wheel handler
+  // Scroll → dolly camera directly
   c.addEventListener('wheel',e=>{
     e.preventDefault();e.stopImmediatePropagation();
     if(!renderer)return;
@@ -315,17 +325,25 @@ function init(){
   st('READY');
 }
 
-function hilite(k){['R','P','Z'].forEach(x=>document.getElementById('btn'+x).classList.remove('active'));document.getElementById('btn'+k).classList.add('active');}
+function hilite(k){
+  ['R','P','Z'].forEach(x=>document.getElementById('btn'+x).classList.remove('active'));
+  document.getElementById('btn'+k).classList.add('active');
+}
 function fitCam(){if(renderer)renderer.resetCamera();}
 
 // ─── colormaps ────────────────────────────────────────────────────────────────
 function buildCM(){
   const g=document.getElementById('cmg');g.innerHTML='';
   for(const[n,s] of Object.entries(MAPS)){
-    const d=document.createElement('div');d.className='cb'+(n===activeCM?' active':'');
+    const d=document.createElement('div');
+    d.className='cb'+(n===activeCM?' active':'');
     d.innerHTML=`<canvas width="100" height="12"></canvas><div class="cbl">${n}</div>`;
-    d.onclick=()=>{document.querySelectorAll('.cb').forEach(b=>b.classList.remove('active'));d.classList.add('active');activeCM=n;applyCM();};
-    drawBar(d.querySelector('canvas'),s);g.appendChild(d);
+    d.onclick=()=>{
+      document.querySelectorAll('.cb').forEach(b=>b.classList.remove('active'));
+      d.classList.add('active');activeCM=n;applyCM();
+    };
+    drawBar(d.querySelector('canvas'),s);
+    g.appendChild(d);
   }
 }
 function drawBar(cv,stops){
@@ -340,7 +358,10 @@ function applyCM(){
     const t=sr[0]+i/(MAPS[activeCM].length-1)*(sr[1]-sr[0]);
     lut.addRGBPoint(t,c[0]/255,c[1]/255,c[2]/255);
   });
-  mapper.setLookupTable(lut);mapper.setUseLookupTableScalarRange(true);mapper.modified();drawSB();
+  mapper.setLookupTable(lut);
+  mapper.setUseLookupTableScalarRange(true);
+  mapper.modified();
+  drawSB();
 }
 function drawSB(){
   const cv=document.getElementById('sbCv'),ctx=cv.getContext('2d');
@@ -351,18 +372,26 @@ function drawSB(){
   document.getElementById('sbMax').textContent=sr[1].toFixed(2);
   document.getElementById('sb').classList.add('show');
 }
-
 function st(t){document.getElementById('status').textContent=t;}
 function fmt(n){return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':String(n);}
 
 // ─── display ─────────────────────────────────────────────────────────────────
 function display(pd){
   clr();cpd=pd;
-  mapper=vtkMapper.newInstance();mapper.setInputData(pd);
+  mapper=vtkMapper.newInstance();
+  mapper.setInputData(pd);
   const sc=pd.getPointData().getScalars();
-  if(sc){sr=sc.getRange();mapper.setScalarRange(sr[0],sr[1]);mapper.setScalarVisibility(true);applyCM();}
-  else{mapper.setScalarVisibility(false);document.getElementById('sb').classList.remove('show');}
-  actor=vtkActor.newInstance();actor.setMapper(mapper);
+  if(sc){
+    sr=sc.getRange();
+    mapper.setScalarRange(sr[0],sr[1]);
+    mapper.setScalarVisibility(true);
+    applyCM();
+  }else{
+    mapper.setScalarVisibility(false);
+    document.getElementById('sb').classList.remove('show');
+  }
+  actor=vtkActor.newInstance();
+  actor.setMapper(mapper);
   actor.getProperty().setOpacity(parseFloat(document.getElementById('opS').value));
   renderer.addActor(actor);
   document.getElementById('iPts').textContent='Pts '+fmt(pd.getNumberOfPoints());
@@ -371,8 +400,12 @@ function display(pd){
   document.getElementById('empty').style.display='none';
   renderer.resetCamera();
   if(sc){
-    ['x','y'].forEach(a=>{const s=document.getElementById('c'+a+'S');s.min=sr[0];s.max=sr[1];s.value=(sr[0]+sr[1])/2;});
-    const is=document.getElementById('isoS');is.min=sr[0];is.max=sr[1];is.value=(sr[0]+sr[1])/2;
+    ['x','y'].forEach(a=>{
+      const s=document.getElementById('c'+a+'S');
+      s.min=sr[0];s.max=sr[1];s.value=(sr[0]+sr[1])/2;
+    });
+    const is=document.getElementById('isoS');
+    is.min=sr[0];is.max=sr[1];is.value=(sr[0]+sr[1])/2;
   }
 }
 function clr(){
@@ -388,18 +421,24 @@ function loadDemo(t){
   setTimeout(()=>{
     try{
       ({sphere:mkSph,cone:mkCone,wavelet:mkWave,torus:mkTorus,
-        helix:mkHelix,klein:mkKlein,mobius:mkMobius,cube:mkSphereCube})[t]()
-        ||(()=>{throw new Error('unknown');})();
+        helix:mkHelix,klein:mkKlein,mobius:mkMobius,cube:mkSphereCube})[t]();
       st('LOADED');
     }catch(e){console.error(e);st('ERR');}
   },20);
 }
-
 function _makePD(pts,polys,sc,name){
   const pd=vtkPD.newInstance(),pp=vtkPts.newInstance();
   pp.setData(new Float32Array(pts),3);pd.setPoints(pp);
-  if(polys&&polys.length){const cl=vtkCA.newInstance();cl.setData(new Int32Array(polys));pd.setPolys(cl);}
-  if(sc)pd.getPointData().setScalars(vtkDA.newInstance({name:name||'S',values:new Float32Array(sc)}));
+  if(polys&&polys.length){
+    const cl=vtkCA.newInstance();
+    cl.setData(new Int32Array(polys));
+    pd.setPolys(cl);
+  }
+  if(sc){
+    pd.getPointData().setScalars(
+      vtkDA.newInstance({name:name||'S',values:new Float32Array(sc)})
+    );
+  }
   return pd;
 }
 function _srcPD(src,fn,name){
@@ -411,7 +450,6 @@ function _srcPD(src,fn,name){
 function mkSph(){return _srcPD(vtkSphere.newInstance({thetaResolution:80,phiResolution:80}),(x,y,z)=>Math.sin(x*6+y*4+z*5)*.5+.5,'Wave');}
 function mkCone(){return _srcPD(vtkCone.newInstance({resolution:128,height:2}),(x,y,z)=>(y+1)/2,'Height');}
 function mkWave(){return _srcPD(vtkSphere.newInstance({thetaResolution:80,phiResolution:80}),(x,y,z)=>.5+.3*Math.sin(10*x)*Math.cos(8*y)+.2*Math.cos(6*z),'Wave');}
-
 function mkTorus(){
   const R=1,r=.4,nu=80,nv=40,pts=[],polys=[],sc=[];
   for(let i=0;i<nu;i++){const u=2*Math.PI*i/nu;for(let j=0;j<nv;j++){const v=2*Math.PI*j/nv;pts.push((R+r*Math.cos(v))*Math.cos(u),(R+r*Math.cos(v))*Math.sin(u),r*Math.sin(v));sc.push(Math.sin(3*u+2*v)*.5+.5);}}
@@ -426,7 +464,7 @@ function mkHelix(){
     const nx=Math.cos(a),ny=Math.sin(a);
     for(let j=0;j<nv;j++){
       const phi=2*Math.PI*j/nv;
-      pts.push(cx+r*Math.cos(phi)*nx, cy+r*Math.cos(phi)*ny, cz+r*Math.sin(phi));
+      pts.push(cx+r*Math.cos(phi)*nx,cy+r*Math.cos(phi)*ny,cz+r*Math.sin(phi));
       sc.push(t);
     }
   }
@@ -440,24 +478,11 @@ function mkKlein(){
   for(let i=0;i<nu;i++){
     const u=2*Math.PI*i/nu;
     for(let j=0;j<nv;j++){
-      const v=2*Math.PI*j/nv;
-      const cu=Math.cos(u),su=Math.sin(u),cv2=Math.cos(u/2),sv2=Math.sin(u/2);
-      const r2=4*(1-cu/2);
-      let x,y,z;
-      if(u<Math.PI){
-        x=6*cu*(1+su)+r2*Math.cos(v+Math.PI);
-        y=16*su+r2*Math.sin(v+Math.PI);
-      }else{
-        x=6*cu*(1+su)+r2*Math.cos(v);
-        y=16*su+r2*Math.sin(v);
-      }
-      z=r2*Math.sin(v)*0;
-      // Simpler parametric Klein bottle
-      const a=u,b=v;
-      x=(2+Math.cos(a/2)*Math.sin(b)-Math.sin(a/2)*Math.sin(2*b))*Math.cos(a);
-      y=(2+Math.cos(a/2)*Math.sin(b)-Math.sin(a/2)*Math.sin(2*b))*Math.sin(a);
-      z=Math.sin(a/2)*Math.sin(b)+Math.cos(a/2)*Math.sin(2*b);
-      pts.push(x*.3,y*.3,z*.3);sc.push(Math.sin(u*2+v)*.5+.5);
+      const a=u,b=2*Math.PI*j/nv;
+      const x=(2+Math.cos(a/2)*Math.sin(b)-Math.sin(a/2)*Math.sin(2*b))*Math.cos(a);
+      const y=(2+Math.cos(a/2)*Math.sin(b)-Math.sin(a/2)*Math.sin(2*b))*Math.sin(a);
+      const z=Math.sin(a/2)*Math.sin(b)+Math.cos(a/2)*Math.sin(2*b);
+      pts.push(x*.3,y*.3,z*.3);sc.push(Math.sin(u*2+b)*.5+.5);
     }
   }
   for(let i=0;i<nu;i++)for(let j=0;j<nv;j++){
@@ -482,9 +507,11 @@ function mkMobius(){
 }
 function mkSphereCube(){
   const N=24,pts=[],polys=[],sc=[];
-  const sides=[{n:[1,0,0],u:[0,1,0],v:[0,0,1]},{n:[-1,0,0],u:[0,1,0],v:[0,0,-1]},
-               {n:[0,1,0],u:[1,0,0],v:[0,0,1]},{n:[0,-1,0],u:[-1,0,0],v:[0,0,1]},
-               {n:[0,0,1],u:[1,0,0],v:[0,1,0]},{n:[0,0,-1],u:[1,0,0],v:[0,-1,0]}];
+  const sides=[
+    {n:[1,0,0],u:[0,1,0],v:[0,0,1]},{n:[-1,0,0],u:[0,1,0],v:[0,0,-1]},
+    {n:[0,1,0],u:[1,0,0],v:[0,0,1]},{n:[0,-1,0],u:[-1,0,0],v:[0,0,1]},
+    {n:[0,0,1],u:[1,0,0],v:[0,1,0]},{n:[0,0,-1],u:[1,0,0],v:[0,-1,0]}
+  ];
   for(const s of sides){
     const base=pts.length/3;
     for(let i=0;i<=N;i++)for(let j=0;j<=N;j++){
@@ -500,22 +527,39 @@ function mkSphereCube(){
   const pd=_makePD(pts,polys,sc,'Theta');display(pd);return pd;
 }
 
-// ─── vtk file parser ─────────────────────────────────────────────────────────
-// Legacy .vtk: try ASCII text parse first (handles >8MB ASCII files correctly),
-// fall back to binary ArrayBuffer. vtp=XML, obj=text.
-function parseAndDisplay(buf,ext){
+// ─── VTK file parser ─────────────────────────────────────────────────────────
+// FIX: vtkPolyDataReader (legacy .vtk) exposes parseAsText for ASCII and
+//      parseAsArrayBuffer for binary — but only AFTER you call setReadFromInputString/
+//      setInputString for text mode. The clean cross-version approach:
+//      • ASCII  → reader.parseAsText(string)
+//      • Binary → reader.parseAsArrayBuffer(arrayBuffer)
+//
+// vtkXMLPolyDataReader (.vtp) → parseAsArrayBuffer only
+// vtkOBJReader (.obj)         → parseAsText only
+function parseAndDisplay(buf, ext){
   let pd;
   if(ext==='vtp'){
-    const r=vtkXMLPDR.newInstance();r.parseAsArrayBuffer(buf);pd=r.getOutputData(0);
+    // XML polydata reader — binary ArrayBuffer only
+    const r=vtkXMLPDR.newInstance();
+    r.parseAsArrayBuffer(buf);
+    pd=r.getOutputData(0);
   }else if(ext==='obj'){
+    // OBJ reader — text only
     const r=vtkOBJR.newInstance({splitMode:'usemtl'});
-    r.parseAsText(new TextDecoder().decode(buf));pd=r.getOutputData(0);
+    r.parseAsText(new TextDecoder().decode(buf));
+    pd=r.getOutputData(0);
   }else{
-    // Legacy VTK — peek first 64 bytes to detect ASCII vs binary
-    const peek=new TextDecoder('utf-8',{fatal:false}).decode(new Uint8Array(buf,0,Math.min(256,buf.byteLength)));
+    // Legacy VTK: detect ASCII vs binary by header peek
+    const header=new TextDecoder('utf-8',{fatal:false})
+      .decode(new Uint8Array(buf,0,Math.min(256,buf.byteLength)));
     const r=vtkPDR.newInstance();
-    if(peek.includes('ASCII')){r.parseAsText(new TextDecoder().decode(buf));}
-    else{r.parseAsArrayBuffer(buf);}
+    if(header.includes('ASCII')){
+      // ASCII path — decode full buffer to string, use parseAsText
+      r.parseAsText(new TextDecoder().decode(buf));
+    }else{
+      // Binary path — pass raw ArrayBuffer
+      r.parseAsArrayBuffer(buf);
+    }
     pd=r.getOutputData(0);
   }
   if(!pd||pd.getNumberOfPoints()<1)throw new Error('0 pts or null output');
@@ -531,12 +575,17 @@ document.getElementById('fi').addEventListener('change',e=>{
   fr.onprogress=ev=>{if(ev.lengthComputable)sideLoadPct(ev.loaded/ev.total*85);};
   fr.onload=ev=>{
     sideLoadPct(92);
-    try{parseAndDisplay(ev.target.result,ext);sideLoadDone();st('LOADED');}
-    catch(err){console.error(err);sideLoadDone();st('ERR:'+err.message.slice(0,18));}
+    try{
+      parseAndDisplay(ev.target.result,ext);
+      sideLoadDone();st('LOADED');
+    }catch(err){
+      console.error(err);sideLoadDone();st('ERR:'+err.message.slice(0,18));
+    }
   };
   fr.onerror=()=>{sideLoadDone();st('READ ERR');};
   fr.readAsArrayBuffer(f);
 });
+
 const dz=document.getElementById('drop');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.background='rgba(0,0,0,.1)';});
 dz.addEventListener('dragleave',()=>dz.style.background='');
@@ -548,20 +597,16 @@ dz.addEventListener('drop',e=>{
   }
 });
 
-// ─── URL / GitHub fetch ───────────────────────────────────────────────────────
-// Set this to a relative path (same repo on GitHub Pages) to auto-load on startup.
-// Example: const DEFAULT_VTK='models/brain.vtk';
+// ─── URL fetch ────────────────────────────────────────────────────────────────
 const DEFAULT_VTK='topology.vtk';
-
 function loadURL(){
   const raw=(document.getElementById('urlIn').value.trim())||DEFAULT_VTK;
   if(!raw){st('NO URL');return;}
   const ext=(raw.split('?')[0].split('.').pop()||'vtk').toLowerCase();
   sideLoadStart('Fetching…');st('FETCHING…');
-
   fetch(raw)
-    .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);
-      // stream with progress if content-length available
+    .then(r=>{
+      if(!r.ok)throw new Error('HTTP '+r.status);
       const total=+r.headers.get('content-length')||0;
       if(!r.body||!total)return r.arrayBuffer();
       const rdr=r.body.getReader();let recv=0;const chunks=[];
@@ -584,28 +629,89 @@ if(DEFAULT_VTK){
 }
 
 // ─── controls ────────────────────────────────────────────────────────────────
-function setMode(btn,m){document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');if(!actor)return;const p=actor.getProperty();m==='surface'?p.setRepresentationToSurface():m==='wireframe'?p.setRepresentationToWireframe():p.setRepresentationToPoints();}
-function setOp(v){document.getElementById('opV').textContent=parseFloat(v).toFixed(1);if(actor)actor.getProperty().setOpacity(parseFloat(v));}
-function shot(){const cv=document.querySelector('#vtkC canvas');if(!cv)return;const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download='vtk.png';a.click();}
-function rst(){['x','y'].forEach(a=>{clipOn[a]=false;document.getElementById('tg'+a.toUpperCase()).classList.remove('on');});if(mapper)mapper.removeAllClippingPlanes();contourOn=false;document.getElementById('tgC').classList.remove('on');if(cActor){renderer.removeActor(cActor);cActor=null;}st('RESET');}
-function togClip(a){clipOn[a]=!clipOn[a];document.getElementById('tg'+a.toUpperCase()).classList.toggle('on',clipOn[a]);rebClip();}
-function upClip(a,v){document.getElementById('c'+a+'V').textContent=parseFloat(v).toFixed(2);if(clipOn[a])rebClip();}
-function rebClip(){
-  if(!mapper||!cpd)return;mapper.removeAllClippingPlanes();
-  const b=cpd.getBounds();
-  if(clipOn.x){const v=parseFloat(document.getElementById('cxS').value),t=(v-sr[0])/(sr[1]-sr[0]+1e-10),wx=b[0]+t*(b[1]-b[0]),pl=vtkPlane.newInstance();pl.setOrigin(wx,0,0);pl.setNormal(1,0,0);mapper.addClippingPlane(pl);}
-  if(clipOn.y){const v=parseFloat(document.getElementById('cyS').value),t=(v-sr[0])/(sr[1]-sr[0]+1e-10),wy=b[2]+t*(b[3]-b[2]),pl=vtkPlane.newInstance();pl.setOrigin(0,wy,0);pl.setNormal(0,1,0);mapper.addClippingPlane(pl);}
+function setMode(btn,m){
+  document.querySelectorAll('.mb').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(!actor)return;
+  const p=actor.getProperty();
+  m==='surface'?p.setRepresentationToSurface():
+  m==='wireframe'?p.setRepresentationToWireframe():
+  p.setRepresentationToPoints();
 }
-function togContour(){contourOn=!contourOn;document.getElementById('tgC').classList.toggle('on',contourOn);if(contourOn)buildC();else{if(cActor){renderer.removeActor(cActor);cActor=null;}}}
-function upIso(v){document.getElementById('isoV').textContent=parseFloat(v).toFixed(2);if(contourOn)buildC();}
+function setOp(v){
+  document.getElementById('opV').textContent=parseFloat(v).toFixed(1);
+  if(actor)actor.getProperty().setOpacity(parseFloat(v));
+}
+function shot(){
+  const cv=document.querySelector('#vtkC canvas');if(!cv)return;
+  const a=document.createElement('a');
+  a.href=cv.toDataURL('image/png');a.download='vtk.png';a.click();
+}
+function rst(){
+  ['x','y'].forEach(a=>{
+    clipOn[a]=false;
+    document.getElementById('tg'+a.toUpperCase()).classList.remove('on');
+  });
+  if(mapper)mapper.removeAllClippingPlanes();
+  contourOn=false;
+  document.getElementById('tgC').classList.remove('on');
+  if(cActor){renderer.removeActor(cActor);cActor=null;}
+  st('RESET');
+}
+function togClip(a){
+  clipOn[a]=!clipOn[a];
+  document.getElementById('tg'+a.toUpperCase()).classList.toggle('on',clipOn[a]);
+  rebClip();
+}
+function upClip(a,v){
+  document.getElementById('c'+a+'V').textContent=parseFloat(v).toFixed(2);
+  if(clipOn[a])rebClip();
+}
+function rebClip(){
+  if(!mapper||!cpd)return;
+  mapper.removeAllClippingPlanes();
+  const b=cpd.getBounds();
+  if(clipOn.x){
+    const v=parseFloat(document.getElementById('cxS').value),
+          t=(v-sr[0])/(sr[1]-sr[0]+1e-10),
+          wx=b[0]+t*(b[1]-b[0]),
+          pl=vtkPlane.newInstance();
+    pl.setOrigin(wx,0,0);pl.setNormal(1,0,0);
+    mapper.addClippingPlane(pl);
+  }
+  if(clipOn.y){
+    const v=parseFloat(document.getElementById('cyS').value),
+          t=(v-sr[0])/(sr[1]-sr[0]+1e-10),
+          wy=b[2]+t*(b[3]-b[2]),
+          pl=vtkPlane.newInstance();
+    pl.setOrigin(0,wy,0);pl.setNormal(0,1,0);
+    mapper.addClippingPlane(pl);
+  }
+}
+function togContour(){
+  contourOn=!contourOn;
+  document.getElementById('tgC').classList.toggle('on',contourOn);
+  if(contourOn)buildC();else{if(cActor){renderer.removeActor(cActor);cActor=null;}}
+}
+function upIso(v){
+  document.getElementById('isoV').textContent=parseFloat(v).toFixed(2);
+  if(contourOn)buildC();
+}
 function buildC(){
   if(cActor){renderer.removeActor(cActor);cActor=null;}
   if(!cpd||!cpd.getPointData().getScalars())return;
-  const cf=vtkCF?vtkCF.newInstance():null;if(!cf){st('NO CONTOUR');return;}
+  if(!vtkCF){st('NO CONTOUR');return;}
+  const cf=vtkCF.newInstance();
   cf.setInputData(cpd);cf.setComputeNormals(true);
-  const iso=parseFloat(document.getElementById('isoS').value);cf.generateValues(1,iso,iso);
-  const cm=vtkMapper.newInstance();cm.setInputConnection(cf.getOutputPort());cm.setScalarVisibility(false);
-  cActor=vtkActor.newInstance();cActor.setMapper(cm);cActor.getProperty().setColor(1,.4,0);cActor.getProperty().setLineWidth(2);
+  const iso=parseFloat(document.getElementById('isoS').value);
+  cf.generateValues(1,iso,iso);
+  const cm=vtkMapper.newInstance();
+  cm.setInputConnection(cf.getOutputPort());
+  cm.setScalarVisibility(false);
+  cActor=vtkActor.newInstance();
+  cActor.setMapper(cm);
+  cActor.getProperty().setColor(1,.4,0);
+  cActor.getProperty().setLineWidth(2);
   renderer.addActor(cActor);
 }
 
@@ -617,7 +723,8 @@ function drawAxes(){
   const m=renderer.getActiveCamera().getViewMatrix(),cx=28,cy=28,len=20;
   [[m[0],m[4],'#ff4455','X'],[m[1],m[5],'#44ee88','Y'],[m[2],m[6],'#4499ff','Z']].forEach(([ax,ay,col,lab])=>{
     const ex=cx+ax*len,ey=cy-ay*len;
-    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ex,ey);ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ex,ey);
+    ctx.strokeStyle=col;ctx.lineWidth=2;ctx.stroke();
     ctx.fillStyle=col;ctx.font='bold 9px Arial';ctx.fillText(lab,ex+2,ey+3);
   });
 }
